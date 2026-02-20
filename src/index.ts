@@ -4,27 +4,23 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { registerNoteTools } from './tools/note.js';
 import { registerSearchTools } from './tools/search.js';
 
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
-
-const server = new McpServer({
-  name: 'obsidian-vault-mcp',
-  version: '1.0.0',
-});
-
-registerNoteTools(server);
-registerSearchTools(server);
-
-// Stateless mode: no session tracking, each request is independent
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: undefined,
-});
-
-await server.connect(transport);
+const PORT = parseInt(process.env.PORT ?? '1065', 10);
 
 const httpServer = http.createServer(async (req, res) => {
   const url = req.url ?? '';
+
   if (url === '/mcp' || url.startsWith('/mcp?')) {
     try {
+      // Stateless mode: create a fresh server per request.
+      // Our tools (note_read, note_upsert, vault_search) are side-effect-free
+      // across requests, so no session state is needed.
+      const server = new McpServer({ name: 'obsidian-vault-mcp', version: '1.0.0' });
+      registerNoteTools(server);
+      registerSearchTools(server);
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined, // stateless — no session tracking
+      });
+      await server.connect(transport);
       await transport.handleRequest(req, res);
     } catch (err) {
       console.error('MCP request error:', err);
