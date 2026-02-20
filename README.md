@@ -30,3 +30,16 @@ Copy `.env.example` to `.env` to persist environment variables if needed.
 ```sh
 VAULT_PATH=/mnt/vault npx tsx src/index.ts
 ```
+
+## Tools
+
+All tools are exposed at `POST /mcp` via MCP Streamable HTTP.
+
+| Tool | Description |
+|------|-------------|
+| `note_read` | Read a note by vault-relative path. Returns `{ content, exists }`. |
+| `note_upsert` | Create a note (with optional frontmatter) or append to an existing one. Returns `{ created }`. |
+| `note_delete` | Delete a note. Returns `{ deleted }` (false if not found, no error). |
+| `vault_search` | Full-text search with ripgrep. Accepts `query` (regex) and optional `path_filter` (glob). |
+
+See [`AGENTS.md`](./AGENTS.md) for full input/output specs.
