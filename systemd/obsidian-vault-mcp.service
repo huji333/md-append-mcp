@@ -1,0 +1,13 @@
+[Unit]
+Description=Obsidian Vault MCP Server
+After=network.target rclone-vault.service
+
+[Service]
+WorkingDirectory=/opt/obsidian-vault-mcp
+EnvironmentFile=/etc/obsidian-vault-mcp.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
