@@ -9,12 +9,15 @@ export function getVaultPath(): string {
 }
 
 /**
- * Resolves a vault-relative path to an absolute path.
- * Throws if the resolved path escapes the vault root (path traversal protection).
+ * Resolves a repo-relative path to an absolute path.
+ * Throws if repositoryName is invalid or if the resolved path escapes the vault root.
  */
-export function resolveSafePath(relativePath: string): string {
+export function resolveSafePath(relativePath: string, repositoryName: string): string {
+  if (!repositoryName || /[/\\]/.test(repositoryName) || repositoryName === '..' || repositoryName === '.') {
+    throw new Error(`Invalid repository_name: "${repositoryName}"`);
+  }
   const vaultPath = path.resolve(getVaultPath());
-  const resolved = path.resolve(vaultPath, relativePath);
+  const resolved = path.resolve(vaultPath, repositoryName, relativePath);
   if (resolved === vaultPath || !resolved.startsWith(vaultPath + path.sep)) {
     throw new Error(`Invalid path: "${relativePath}" escapes the vault root`);
   }
@@ -23,8 +26,9 @@ export function resolveSafePath(relativePath: string): string {
 
 export async function readNote(
   relativePath: string,
+  repositoryName: string,
 ): Promise<{ content: string; exists: boolean }> {
-  const fullPath = resolveSafePath(relativePath);
+  const fullPath = resolveSafePath(relativePath, repositoryName);
   try {
     const content = await fs.readFile(fullPath, 'utf-8');
     return { content, exists: true };
@@ -42,8 +46,9 @@ export async function readNote(
  */
 export async function deleteNote(
   relativePath: string,
+  repositoryName: string,
 ): Promise<{ deleted: boolean }> {
-  const fullPath = resolveSafePath(relativePath);
+  const fullPath = resolveSafePath(relativePath, repositoryName);
   try {
     await fs.unlink(fullPath);
     return { deleted: true };
@@ -58,9 +63,10 @@ export async function deleteNote(
 export async function upsertNote(
   relativePath: string,
   content: string,
+  repositoryName: string,
   frontmatter?: Record<string, unknown>,
 ): Promise<{ created: boolean }> {
-  const fullPath = resolveSafePath(relativePath);
+  const fullPath = resolveSafePath(relativePath, repositoryName);
 
   let exists = true;
   try {

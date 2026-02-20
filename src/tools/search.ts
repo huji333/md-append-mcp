@@ -24,6 +24,9 @@ export function registerSearchTools(server: McpServer): void {
     {
       description: 'Full-text search across the vault using ripgrep',
       inputSchema: {
+        repository_name: z.string().describe(
+          'Repository or project name to scope the search within',
+        ),
         query: z.string().describe('Search query (ripgrep regex pattern)'),
         path_filter: z
           .string()
@@ -31,14 +34,18 @@ export function registerSearchTools(server: McpServer): void {
           .describe('Glob pattern to restrict search scope (e.g. devlog/*.md)'),
       },
     },
-    async ({ query, path_filter: pathFilter }) => {
-      const vaultPath = getVaultPath();
+    async ({ repository_name: repositoryName, query, path_filter: pathFilter }) => {
+      if (!repositoryName || /[/\\]/.test(repositoryName) || repositoryName === '..' || repositoryName === '.') {
+        throw new Error(`Invalid repository_name: "${repositoryName}"`);
+      }
+      const vaultRoot = getVaultPath();
+      const repoRoot = path.resolve(vaultRoot, repositoryName);
       const args = ['--json', query];
       if (pathFilter) {
         const glob = pathFilter.startsWith('**/') ? pathFilter : `**/${pathFilter}`;
         args.push('--glob', glob);
       }
-      args.push(vaultPath);
+      args.push(repoRoot);
 
       try {
         const { stdout } = await execFileAsync('rg', args, {
@@ -52,7 +59,7 @@ export function registerSearchTools(server: McpServer): void {
           if (obj.type === 'match') {
             const m = obj as RgMatchLine;
             results.push({
-              path: path.relative(vaultPath, m.data.path.text),
+              path: path.relative(repoRoot, m.data.path.text),
               line: m.data.line_number,
               text: m.data.lines.text.trimEnd(),
             });
