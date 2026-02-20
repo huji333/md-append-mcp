@@ -1,8 +1,17 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFile } from 'node:child_process';
+import { type ChildProcess, execFile } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
+
+/**
+ * Callback signature as promisify invokes our mock.
+ * The real execFile callback is (err, stdout, stderr), but because our vi.fn() mock
+ * has no util.promisify.custom, promisify resolves the promise with the first
+ * non-error argument. We pass { stdout } as that argument so the search handler
+ * can destructure `const { stdout } = await execFileAsync(...)`.
+ */
+type MockExecCallback = (err: Error | null, result?: { stdout: string }) => void;
 
 // Must be hoisted before importing search.ts so that promisify(execFile) wraps the mock
 vi.mock('node:child_process', () => ({
@@ -54,8 +63,9 @@ function makeRgOutput(
 /** Make the mock resolve with the given stdout string */
 function mockRgSuccess(stdout: string): void {
   mockExecFile.mockImplementation((...args) => {
-    const cb = args[args.length - 1] as (err: null, result: { stdout: string }) => void;
+    const cb = args[args.length - 1] as MockExecCallback;
     cb(null, { stdout });
+    return {} as ChildProcess;
   });
 }
 
@@ -63,8 +73,9 @@ function mockRgSuccess(stdout: string): void {
 function mockRgError(code: number, message = 'rg error'): void {
   const err = Object.assign(new Error(message), { code });
   mockExecFile.mockImplementation((...args) => {
-    const cb = args[args.length - 1] as (err: Error) => void;
+    const cb = args[args.length - 1] as MockExecCallback;
     cb(err);
+    return {} as ChildProcess;
   });
 }
 
