@@ -11,26 +11,23 @@ npm run dev        # tsx src/index.ts (no build step)
 
 ## Registering the MCP Server
 
-Add to `~/.claude/settings.json`:
+Use `claude mcp add` (stored in `~/.claude.json`, not `settings.json`):
 
-```json
-{
-  "mcpServers": {
-    "obsidian-vault": {
-      "type": "http",
-      "url": "http://<LXC_IP>:1065/mcp"
-    }
-  }
-}
+```sh
+# Obsidian Vault (HTTP, LXC server)
+claude mcp add obsidian-vault --transport http http://<LXC_IP>:1065/mcp
+
+# GitHub (stdio, local binary)
+claude mcp add github -- sh -c 'GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token) ~/.local/bin/github-mcp-server stdio'
 ```
 
 `VAULT_PATH` on the server should point to the `claude/` subdirectory of your Obsidian Vault.
 
 ## Skills
 
-### `/orient`
+### `/catchup`
 
-Load recent context (AGENTS.md + devlog). **Suggest proactively** at session start or when context feels stale.
+Load recent context (AGENTS.md + devlog + tmp/ handoff notes). **Suggest proactively** at session start or when context feels stale.
 
 ### `/devlog`
 

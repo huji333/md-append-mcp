@@ -1,10 +1,10 @@
-You are executing the /orient command. Load current project context from AGENTS.md and the Obsidian Vault devlog.
+You are executing the /catchup command. Load current project context from AGENTS.md, the Obsidian Vault devlog, and any pending handoff notes.
 
 ## Purpose
 
-Recover recent progress and active decisions from the Obsidian Vault without relying on conversation history.
+Recover recent progress, open problems, and next actions from the Obsidian Vault — without relying on conversation history.
 
-**This skill is intended for proactive use.** You (Claude) should suggest running `/orient` when:
+**This skill is intended for proactive use.** You (Claude) should suggest running `/catchup` when:
 - A new session starts and the user's task seems project-related
 - The conversation context feels stale or you're unsure of recent changes
 - The user asks "where were we?" or refers to past work vaguely
@@ -43,7 +43,23 @@ Extract and display the **last 10 entries** (most recent first, sorted by date i
 
 Highlight any lines containing `未解決` — these are unresolved issues that may need attention.
 
-### 5. Read ADR index (optional)
+### 5. Check for handoff notes (tmp/)
+
+Search for pending verification or handoff notes:
+
+```
+vault_search query="." path_filter="tmp/*.md"
+```
+
+If any exist, read them:
+
+```
+note_read path="tmp/{filename}.md"
+```
+
+Surface the contents as **"持ち越しタスク"** in the report.
+
+### 6. Read ADR index (optional)
 
 ```
 note_read path="_index.md"
@@ -51,9 +67,10 @@ note_read path="_index.md"
 
 If it exists, show the table of ADRs for reference.
 
-### 6. Report
+### 7. Report
 
 Summarize in bullet form:
+- **持ち越しタスク** — contents of any `tmp/` notes (highest priority)
 - **Recent work** — last 3–5 `[impl]` / `[verify]` entries
 - **Open problems** — any `未解決` items
 - **Active decisions** — latest ADR(s), if any
@@ -62,6 +79,6 @@ Keep the summary concise. Do not repeat raw log lines verbatim unless asked.
 
 ## Notes
 
-- MCP server must be registered as `obsidian-vault` in `~/.claude/settings.json`
+- `obsidian-vault` MCP server: registered in `~/.claude.json` via `claude mcp add`
 - If no devlog file matches the current project, say so and suggest running `/devlog` to create one
 - This skill is read-only — it never writes to the vault
