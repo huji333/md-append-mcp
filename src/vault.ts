@@ -15,7 +15,7 @@ export function getVaultPath(): string {
 export function resolveSafePath(relativePath: string): string {
   const vaultPath = path.resolve(getVaultPath());
   const resolved = path.resolve(vaultPath, relativePath);
-  if (resolved !== vaultPath && !resolved.startsWith(vaultPath + path.sep)) {
+  if (resolved === vaultPath || !resolved.startsWith(vaultPath + path.sep)) {
     throw new Error(`Invalid path: "${relativePath}" escapes the vault root`);
   }
   return resolved;
@@ -40,6 +40,21 @@ export async function readNote(
  * Creates a note with frontmatter if it doesn't exist,
  * or appends content to the end if it already exists.
  */
+export async function deleteNote(
+  relativePath: string,
+): Promise<{ deleted: boolean }> {
+  const fullPath = resolveSafePath(relativePath);
+  try {
+    await fs.unlink(fullPath);
+    return { deleted: true };
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { deleted: false };
+    }
+    throw err;
+  }
+}
+
 export async function upsertNote(
   relativePath: string,
   content: string,

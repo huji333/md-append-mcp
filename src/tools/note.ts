@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { readNote, upsertNote } from '../vault.js';
+import { readNote, upsertNote, deleteNote } from '../vault.js';
 
 export function registerNoteTools(server: McpServer): void {
   server.registerTool(
@@ -43,6 +43,22 @@ export function registerNoteTools(server: McpServer): void {
         content,
         frontmatter as Record<string, unknown> | undefined,
       );
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(result) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'note_delete',
+    {
+      description: 'Delete a note from the vault by its relative path',
+      inputSchema: {
+        path: z.string().describe('Relative path to the note within the vault'),
+      },
+    },
+    async ({ path: notePath }) => {
+      const result = await deleteNote(notePath);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result) }],
       };

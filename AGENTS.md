@@ -61,6 +61,20 @@ output: { created: boolean }   // true = new file created, false = appended
 
 ---
 
+### `note_delete`
+
+Delete a note from the vault by vault-relative path.
+
+```
+input:  { path: string }
+output: { deleted: boolean }   // true = file deleted, false = file did not exist
+```
+
+- Returns `{ deleted: false }` if the file does not exist (no error).
+- Path traversal (`..`) is rejected with an error.
+
+---
+
 ### `vault_search`
 
 Full-text search across the vault using ripgrep.
@@ -118,6 +132,30 @@ related: []
 
 ---
 
+## Devlog Inline Recording
+
+Agents should append devlog lines **proactively during work**, without waiting for `/devlog` skill invocation.
+
+Use `note_upsert` to append a single line whenever a notable event occurs:
+
+```
+[impl]    YYYY-MM-DD  {what was implemented}
+[problem] YYYY-MM-DD  {what went wrong and how it was resolved}
+[insight] YYYY-MM-DD  {something learned or worth remembering}
+[verify]  YYYY-MM-DD  {what was confirmed to work}
+```
+
+**When to append inline:**
+- A bug is found and fixed → `[problem]`
+- A feature or change is implemented → `[impl]`
+- A non-obvious fact is discovered → `[insight]`
+- A tool or flow is confirmed working → `[verify]`
+
+**Target file:** the devlog file whose `topic` matches the current task (e.g. `devlog/obsidian-vault-mcp-setup.md`).
+If no matching topic exists, create one or append to the most relevant file.
+
+---
+
 ## Security
 
 - No authentication in the server itself (auth-agnostic by design).
@@ -130,11 +168,12 @@ related: []
 
 ### Phase 1 — Complete (2026-02-20)
 
-- [x] `note_read` / `note_upsert` / `vault_search` tools
+- [x] `note_read` / `note_upsert` / `vault_search` / `note_delete` tools
 - [x] Session-based Streamable HTTP transport (`randomUUID` session IDs)
-- [x] Path traversal protection
+- [x] Path traversal protection (vault root itself also rejected)
+- [x] `vault_search` `path_filter` glob fixed (`**/` prefix auto-applied)
 - [x] `.claude/` repo structure (CLAUDE.md, skills/devlog.md, skills/adr.md)
-- [x] End-to-end verified locally against real Obsidian Vault
+- [x] End-to-end verified against real Obsidian Vault
 
 ### Phase 2 — Not implemented
 

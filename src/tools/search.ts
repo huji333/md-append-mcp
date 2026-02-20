@@ -35,7 +35,8 @@ export function registerSearchTools(server: McpServer): void {
       const vaultPath = getVaultPath();
       const args = ['--json', query];
       if (pathFilter) {
-        args.push('--glob', pathFilter);
+        const glob = pathFilter.startsWith('**/') ? pathFilter : `**/${pathFilter}`;
+        args.push('--glob', glob);
       }
       args.push(vaultPath);
 
