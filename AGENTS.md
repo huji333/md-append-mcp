@@ -8,10 +8,21 @@ Runs on a Proxmox LXC that mounts Google Drive via rclone.
 ```
 AI Agent (Claude Code, etc.)
   ↓ MCP Streamable HTTP  (port 1065)
-Node.js MCP Server  (src/index.ts)
+Node.js MCP Server  (src/index.ts)          ← Mini PC / LXC (headless)
   ↓ fs + gray-matter
 VAULT_PATH  (rclone mount → Google Drive / Obsidian Vault)
 ```
+
+Task operations are split by access pattern across two hosts:
+
+| Access pattern | Host | MCP server | Tools |
+|---|---|---|---|
+| Read / Append | Mini PC (LXC, this repo) | `obsidian-vault-mcp` | `note_*`, `vault_search`, `task_list`, `task_add` |
+| Edit | Mac (on-demand, Obsidian running) | `obsidian-cli-mcp` *(TBD)* | `task_done`, `task_toggle` |
+
+**Rationale:** The official Obsidian CLI (`obsidian task ... done`) requires the Obsidian GUI app
+to be running and cannot run headless on LXC. Read/append ops are plain filesystem operations
+and belong here. Edit ops that benefit from native Obsidian semantics run on Mac on-demand.
 
 ## Environment Variables
 
