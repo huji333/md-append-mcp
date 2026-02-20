@@ -8,6 +8,7 @@ Each entry is one line appended to `devlog/{topic}.md`:
 [impl]    YYYY-MM-DD  {what was done}
 [problem] YYYY-MM-DD  {issue encountered} → {how it was resolved, or "未解決"}
 [insight] YYYY-MM-DD  {learning or observation}
+[verify]  YYYY-MM-DD  {what was confirmed to work}
 ```
 
 Today's date is provided in the system context (`currentDate`).
@@ -21,6 +22,7 @@ The user may invoke this command as:
 - `/devlog impl "..."` — type + message provided
 - `/devlog problem "..."` — type + message provided
 - `/devlog insight "..."` — type + message provided
+- `/devlog verify "..."` — type + message provided
 
 If type and message are provided in the invocation args, skip directly to step 3.
 

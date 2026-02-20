@@ -19,51 +19,33 @@ Add to `~/.claude/settings.json`:
     "obsidian-vault": {
       "type": "http",
       "url": "http://<LXC_IP>:1065/mcp"
-      // VAULT_PATH on the server should point to the claude/ subdirectory of your vault
     }
   }
 }
 ```
 
-Replace `<LXC_IP>` with your Proxmox LXC's IP (or Tailscale address).
+`VAULT_PATH` on the server should point to the `claude/` subdirectory of your Obsidian Vault.
 
-## Available Tools
+## Skills
 
-### `note_read`
+### `/orient`
 
-Read a markdown note from the vault by its relative path.
-
-```
-input:  { path: string }              // e.g. "devlog/2024-01-01.md"
-output: { content: string, exists: boolean }
-```
-
-### `note_upsert`
-
-Create a note (with optional frontmatter) if it doesn't exist, or append to it if it does.
-
-```
-input:  { path: string, content: string, frontmatter?: Record<string, unknown> }
-output: { created: boolean }          // true = new file, false = appended
-```
-
-### `vault_search`
-
-Full-text search across the vault using ripgrep.
-
-```
-input:  { query: string, path_filter?: string }   // path_filter is a glob, e.g. "devlog/*.md"
-output: { results: Array<{ path: string, line: number, text: string }> }
-```
-
-## Skill Integration
+Load recent context (AGENTS.md + devlog). **Suggest proactively** at session start or when context feels stale.
 
 ### `/devlog`
 
-Records session friction, insights, and progress. Uses `note_upsert` to append to `devlog/{topic-slug}.md`.
+Append to `devlog/{topic}.md`. Log **as events happen** — do not wait for user invocation.
+
+| Trigger | Tag |
+|---------|-----|
+| Error, unexpected behavior, or dead end | `[problem] YYYY-MM-DD  {issue} → {resolution or "未解決"}` |
+| Feature, fix, or change implemented | `[impl]    YYYY-MM-DD  {what}` |
+| Tool or flow confirmed working | `[verify]  YYYY-MM-DD  {what}` |
+| Non-obvious fact discovered | `[insight] YYYY-MM-DD  {what}` |
+
+**`[problem]` especially**: log every non-trivial error, even if resolved quickly.
+Target file: infer from project context; use `vault_search` if unsure.
 
 ### `/adr`
 
-Records an architectural decision to `adr/ADR-NNN-slug.md`. Uses `note_upsert` to create the ADR file with frontmatter.
-
-Both skills require this MCP server to be registered and reachable.
+Record an architectural decision to `adr/ADR-NNN-{slug}.md`.
