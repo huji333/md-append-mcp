@@ -80,4 +80,4 @@ Confirm: "✓ `devlog/{topic}.md` に [{type}] を追記しました"
 - `problem` format: `[problem] YYYY-MM-DD  {issue} → {resolution}`
 - project-name: infer from cwd or CLAUDE.md
 - topic-slug: lowercase, hyphen-separated (e.g. `mcp-session-handling`)
-- MCP server must be registered as `obsidian-vault` in `~/.claude/settings.json`
+- MCP server must be registered as `obsidian-vault` in `~/.claude.json` (via `claude mcp add`)

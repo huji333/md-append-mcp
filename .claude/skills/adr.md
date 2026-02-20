@@ -14,20 +14,16 @@ Count the results. Next ADR number = count + 1. If no results, start at ADR-001.
 
 ### 2. Fetch GitHub references (optional)
 
-Ask the user:
+Infer related GitHub Issue/PR references from the current conversation context — do not ask the user.
 
-> 関連する GitHub Issue/PR の URL があれば教えてください（任意、複数可。例: https://github.com/owner/repo/issues/42）:
-
-If URLs are provided, for each one:
-- Parse the URL to extract: `owner`, `repo`, `number`, and type (`issues` → issue / `pull` → PR)
+If any Issue/PR numbers or URLs are evident in the conversation:
+- Parse to extract: `owner`, `repo`, `number`, and type (`issues` → issue / `pull` → PR)
 - Call the appropriate tool from the `github` MCP server:
   - Issue: `issue_read` with `{ owner, repo, issueNumber: number }`
   - PR: `pull_request_read` with `{ owner, repo, pullNumber: number }`
 - Extract: title, body, state, labels
 
-Collect all fetched references. These will be used to enrich the ADR draft and populate `related:`.
-
-If no URLs are provided, skip this step.
+If no references are evident, skip this step and set `related: []`.
 
 ### 3. Draft ADR from session context
 

@@ -46,3 +46,12 @@ Target file: infer from project context; use `vault_search` if unsure.
 ### `/adr`
 
 Record an architectural decision to `adr/ADR-NNN-{slug}.md`.
+
+## MCP vs Obsidian CLI
+
+| Layer | Tool | When to use |
+|-------|------|-------------|
+| Read / Append (device-agnostic) | `obsidian-vault` MCP (LXC) | Skills (`/adr`, `/devlog`, `/catchup`), always-on |
+| Edit (Mac-only) | `obsidian` CLI | Task edit ops (`task_done`, `task_toggle`) — requires Obsidian app running |
+
+Skills use MCP exclusively. Obsidian CLI is reserved for Mac-side edit operations (see ADR-012).
