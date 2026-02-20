@@ -31,6 +31,14 @@ Copy `.env.example` to `.env` to persist environment variables if needed.
 VAULT_PATH=/mnt/vault npx tsx src/index.ts
 ```
 
+## Testing
+
+```sh
+npm test
+```
+
+Unit tests cover `vault.ts` (path safety, read/upsert/delete) and `vault_search` (result parsing, exit-code handling, `path_filter` glob normalization). No live vault or ripgrep binary is required — filesystem operations use a temp directory and `execFile` is mocked.
+
 ## Tools
 
 All tools are exposed at `POST /mcp` via MCP Streamable HTTP.
