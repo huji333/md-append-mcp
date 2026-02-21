@@ -1,8 +1,12 @@
 import http from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { registerNoteTools } from './tools/note.js';
-import { registerSearchTools } from './tools/search.js';
+import { registerDevlogAppend } from './controller/devlog_append.ts';
+import { registerDevlogTail } from './controller/devlog_tail.ts';
+import { registerAdrWrite } from './controller/adr_write.ts';
+import { registerAdrDelete } from './controller/adr_delete.ts';
+import { registerAdrIndex } from './controller/adr_index.ts';
+import { registerAdrView } from './controller/adr_view.ts';
 
 const PORT = parseInt(process.env.PORT ?? '1065', 10);
 
@@ -11,12 +15,13 @@ const httpServer = http.createServer(async (req, res) => {
 
   if (url === '/mcp' || url.startsWith('/mcp?')) {
     try {
-      // Stateless mode: create a fresh server per request.
-      // Our tools (note_read, note_upsert, vault_search) are side-effect-free
-      // across requests, so no session state is needed.
-      const server = new McpServer({ name: 'obsidian-vault-mcp', version: '1.0.0' });
-      registerNoteTools(server);
-      registerSearchTools(server);
+      const server = new McpServer({ name: 'obsidian-vault-mcp', version: '2.0.0' });
+      registerDevlogAppend(server);
+      registerDevlogTail(server);
+      registerAdrWrite(server);
+      registerAdrDelete(server);
+      registerAdrIndex(server);
+      registerAdrView(server);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined, // stateless — no session tracking
       });

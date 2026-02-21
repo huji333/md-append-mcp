@@ -1,93 +1,54 @@
-You are executing the /adr command. Record an architectural decision to Obsidian Vault as source of truth via the obsidian-vault MCP server.
+You are executing the /adr command. Record an architectural decision to Obsidian Vault.
 
 ## Steps
 
-### 1. Get next ADR number
+### 1. Check existing ADRs (optional)
 
-Search for existing ADRs:
+Call `adr_index` to see what's already recorded — for context, not for numbering (server auto-assigns).
 
 ```
-vault_search query="tag: adr" path_filter="adr/*.md"
+adr_index({ repository_name: "<git-repo-name>" })
 ```
-
-Count the results. Next ADR number = count + 1. If no results, start at ADR-001.
 
 ### 2. Fetch GitHub references (optional)
 
-Infer related GitHub Issue/PR references from the current conversation context — do not ask the user.
+If Issue/PR numbers are evident in conversation context, fetch details via the `github` MCP server.
+Do not ask the user — infer from context only. If nothing evident, set `related: []`.
 
-If any Issue/PR numbers or URLs are evident in the conversation:
-- Parse to extract: `owner`, `repo`, `number`, and type (`issues` → issue / `pull` → PR)
-- Call the appropriate tool from the `github` MCP server:
-  - Issue: `issue_read` with `{ owner, repo, issueNumber: number }`
-  - PR: `pull_request_read` with `{ owner, repo, pullNumber: number }`
-- Extract: title, body, state, labels
+### 3. Draft ADR
 
-If no references are evident, skip this step and set `related: []`.
+Auto-generate from conversation context. Structure:
 
-### 3. Draft ADR from session context
-
-From the current conversation (and fetched GitHub context if available), identify the decision being made and auto-generate:
-
-```markdown
----
-tags: [adr, accepted]
-adr: {N}
-date: {YYYY-MM-DD}
-status: accepted
-project: {project-name}
-related:
-  - {GitHub URL 1}
-  - {GitHub URL 2}
----
-
-# ADR-{NNN}: {title}
-
+```
 ## Context
-{Why was this decision necessary? What problem does it solve?}
-{If GitHub refs were fetched, summarize relevant background from issue/PR body and discussion.}
-
-## Options Considered
-1. **{Option A}** — {pros/cons}
-2. **{Option B}** — {pros/cons}
+Why was this decision necessary?
 
 ## Decision
-{What was chosen and why}
+What was chosen and why?
 
 ## Consequences
-{Trade-offs, implications, things that follow from this decision}
+Trade-offs and implications.
 ```
 
-- If no GitHub refs: `related:` is an empty list `[]`
-- Show the draft to the user. Ask for confirmation or edits before saving.
+**Keep total content under 500 chars.** Show draft to user for confirmation or edits.
 
-### 4. Save ADR to Vault
-
-Determine the slug from the title (lowercase, hyphen-separated):
+### 4. Save
 
 ```
-note_upsert
-  path="adr/ADR-{NNN}-{slug}.md"
-  content="{full body without frontmatter}"
-  frontmatter={ tags: ["adr", "accepted"], adr: {N}, date: "{YYYY-MM-DD}", status: "accepted", project: "{project-name}", related: ["{url1}", "{url2}"] }
+adr_write({
+  repository_name: "<git-repo-name>",
+  title: "<title>",
+  content: "<draft>",
+  branch: "<current-branch>",
+  status: "accepted",          // or "proposed" if still debated
+  related: ["<github-url>"]
+})
 ```
 
-### 5. Update _index.md
-
-Append the new entry to the ADR index:
-
-```
-note_upsert
-  path="_index.md"
-  content="\n| ADR-{NNN} | {title} | {YYYY-MM-DD} | accepted | [[ADR-{NNN}-{slug}]] |"
-```
-
-Confirm to the user: "ADR-{NNN} saved at adr/ADR-{NNN}-{slug}.md"
+Confirm: "ADR-<NNN> saved at adr/ADR-<NNN>-<slug>.md"
 
 ## Notes
 
-- project-name: infer from current working directory or CLAUDE.md
-- Use zero-padded 3-digit number for NNN (e.g., 001, 012)
-- If the decision is still being debated, set status: proposed instead of accepted
-- `obsidian-vault` MCP server: registered in `~/.claude.json` via `claude mcp add`
-- `github` MCP server: registered in `~/.claude.json` via `claude mcp add github -- sh -c '...'`
+- project-name: infer from cwd or CLAUDE.md
+- status `proposed` if decision is still being debated
+- `obsidian-vault` MCP must be registered via `claude mcp add`
