@@ -41,8 +41,8 @@ export async function readNote(
 }
 
 /**
- * Creates a note with frontmatter if it doesn't exist,
- * or appends content to the end if it already exists.
+ * Deletes a note from the vault by its relative path.
+ * Returns deleted:false if the file does not exist.
  */
 export async function deleteNote(
   relativePath: string,

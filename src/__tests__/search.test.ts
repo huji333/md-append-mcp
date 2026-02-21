@@ -253,4 +253,12 @@ describe('repository_name validation', () => {
   it('throws on repository_name ".."', async () => {
     await expect(vaultSearchHandler({ query: 'foo', repository_name: '..' })).rejects.toThrow('Invalid repository_name');
   });
+
+  it('throws on repository_name "."', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: '.' })).rejects.toThrow('Invalid repository_name');
+  });
+
+  it('throws on empty repository_name', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: '' })).rejects.toThrow('Invalid repository_name');
+  });
 });
