@@ -5,8 +5,9 @@ MCP server that exposes an Obsidian Vault (Google Drive via rclone) to Claude Co
 ## Development Commands
 
 ```sh
-npm run build      # tsc → dist/
-npm run dev        # tsx src/index.ts (no build step)
+bun run src/index.ts   # dev（.env 自動ロード、ビルド不要）
+bun test               # テスト実行
+bun build              # dist/ にバンドル（本番デプロイ用、任意）
 ```
 
 ## Registering the MCP Server

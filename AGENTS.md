@@ -8,8 +8,12 @@ Runs on a Proxmox LXC that mounts Google Drive via rclone.
 ```
 AI Agent (Claude Code, etc.)
   ↓ MCP Streamable HTTP  (port 1065)
-Node.js MCP Server  (src/index.ts)          ← Mini PC / LXC (headless)
-  ↓ fs + gray-matter
+Bun MCP Server  (src/index.ts)              ← Mini PC / LXC (headless)
+  controller/   ← MCP tool 登録・Zod スキーマ（tool 1本 = 1ファイル）
+  usecase/      ← パス解決・ビジネスロジック（create/append 分岐など）
+  repository/   ← 生 fs 操作（abs path）
+  service/      ← ripgrep ラッパー
+  ↓ fs + gray-matter / rg
 VAULT_PATH  (rclone mount → Google Drive / Obsidian Vault)
 ```
 
@@ -33,12 +37,14 @@ and belong here. Edit ops that benefit from native Obsidian semantics run on Mac
 
 ## Tools
 
+すべてのツールで `repository_name` が必須。`VAULT_PATH/{repository_name}/` 以下にスコープされる。
+
 ### `note_read`
 
 Read a markdown note by vault-relative path.
 
 ```
-input:  { path: string }
+input:  { repository_name: string, path: string }
 output: { content: string, exists: boolean }
 ```
 
@@ -50,7 +56,7 @@ output: { content: string, exists: boolean }
 Create a note if it does not exist, or append to it if it does.
 
 ```
-input:  { path: string, content: string, frontmatter?: Record<string, unknown> }
+input:  { repository_name: string, path: string, content: string, frontmatter?: Record<string, unknown> }
 output: { created: boolean }   // true = new file created, false = appended
 ```
 
@@ -63,7 +69,7 @@ output: { created: boolean }   // true = new file created, false = appended
 Delete a note from the vault by vault-relative path.
 
 ```
-input:  { path: string }
+input:  { repository_name: string, path: string }
 output: { deleted: boolean }   // true = file deleted, false = file did not exist
 ```
 
@@ -75,13 +81,13 @@ output: { deleted: boolean }   // true = file deleted, false = file did not exis
 Full-text search across the vault using ripgrep.
 
 ```
-input:  { query: string, path_filter?: string }
+input:  { repository_name: string, query: string, path_filter?: string }
 output: { results: Array<{ path: string, line: number, text: string }> }
 ```
 
 - `query` is a ripgrep regex pattern.
 - `path_filter` is an optional glob (e.g. `devlog/*.md`) — `**/` is auto-prepended.
-- `path` in results is relative to `VAULT_PATH`.
+- `path` in results is relative to `VAULT_PATH/{repository_name}/`.
 
 ## Vault Folder Convention
 

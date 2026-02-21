@@ -1,8 +1,10 @@
 import http from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { registerNoteTools } from './tools/note.js';
-import { registerSearchTools } from './tools/search.js';
+import { registerNoteRead } from './controller/note_read.ts';
+import { registerNoteUpsert } from './controller/note_upsert.ts';
+import { registerNoteDelete } from './controller/note_delete.ts';
+import { registerVaultSearch } from './controller/vault_search.ts';
 
 const PORT = parseInt(process.env.PORT ?? '1065', 10);
 
@@ -15,8 +17,10 @@ const httpServer = http.createServer(async (req, res) => {
       // Our tools (note_read, note_upsert, vault_search) are side-effect-free
       // across requests, so no session state is needed.
       const server = new McpServer({ name: 'obsidian-vault-mcp', version: '1.0.0' });
-      registerNoteTools(server);
-      registerSearchTools(server);
+      registerNoteRead(server);
+      registerNoteUpsert(server);
+      registerNoteDelete(server);
+      registerVaultSearch(server);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined, // stateless — no session tracking
       });

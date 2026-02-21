@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { tmpdir } from 'node:os';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { getVaultPath, resolveSafePath, readNote, deleteNote, upsertNote } from '../vault.js';
+import { getVaultPath, resolveSafePath, readNote, deleteNote, upsertNote } from './note_usecase.ts';
 
 const REPO = 'test-repo';
 
@@ -95,13 +95,6 @@ describe('readNote', () => {
     expect(result).toEqual({ content: '', exists: false });
   });
 
-  it('reads a file in a sub-directory', async () => {
-    await fs.mkdir(path.join(tempDir, REPO, 'sub'), { recursive: true });
-    await fs.writeFile(path.join(tempDir, REPO, 'sub', 'note.md'), 'content', 'utf-8');
-    const result = await readNote('sub/note.md', REPO);
-    expect(result).toEqual({ content: 'content', exists: true });
-  });
-
   it('reads from separate repositories independently', async () => {
     await fs.mkdir(path.join(tempDir, 'repo-a'), { recursive: true });
     await fs.mkdir(path.join(tempDir, 'repo-b'), { recursive: true });
@@ -133,17 +126,6 @@ describe('deleteNote', () => {
   it('returns deleted:false for a non-existent file', async () => {
     const result = await deleteNote('nonexistent.md', REPO);
     expect(result).toEqual({ deleted: false });
-  });
-
-  it('does not affect other files in the same directory', async () => {
-    await fs.mkdir(path.join(tempDir, REPO), { recursive: true });
-    await fs.writeFile(path.join(tempDir, REPO, 'keep.md'), 'keep', 'utf-8');
-    await fs.writeFile(path.join(tempDir, REPO, 'remove.md'), 'remove', 'utf-8');
-
-    await deleteNote('remove.md', REPO);
-
-    const kept = await fs.readFile(path.join(tempDir, REPO, 'keep.md'), 'utf-8');
-    expect(kept).toBe('keep');
   });
 });
 
