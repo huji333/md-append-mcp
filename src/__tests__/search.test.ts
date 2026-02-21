@@ -25,7 +25,7 @@ const mockExecFile = vi.mocked(execFile);
 // ---------------------------------------------------------------------------
 // Capture the vault_search handler by feeding a fake MCP server
 // ---------------------------------------------------------------------------
-type SearchArgs = { query: string; path_filter?: string };
+type SearchArgs = { query: string; path_filter?: string; repository_name: string };
 type SearchResult = { content: Array<{ type: 'text'; text: string }> };
 let vaultSearchHandler: (args: SearchArgs) => Promise<SearchResult>;
 
@@ -43,14 +43,14 @@ registerSearchTools(fakeServer);
 
 /** Build fake ripgrep --json stdout for a list of matches */
 function makeRgOutput(
-  vaultPath: string,
+  baseDir: string,
   matches: Array<{ relPath: string; line: number; text: string }>,
 ): string {
   const lines = matches.map(m =>
     JSON.stringify({
       type: 'match',
       data: {
-        path: { text: path.join(vaultPath, m.relPath) },
+        path: { text: path.join(baseDir, m.relPath) },
         line_number: m.line,
         lines: { text: m.text + '\n' },
       },
@@ -104,15 +104,16 @@ afterEach(async () => {
 // Result parsing
 // ---------------------------------------------------------------------------
 describe('result parsing', () => {
-  it('returns parsed match results with vault-relative paths', async () => {
+  it('returns parsed match results with repo-relative paths', async () => {
+    const repoRoot = path.join(tempDir, 'test-repo');
     mockRgSuccess(
-      makeRgOutput(tempDir, [
+      makeRgOutput(repoRoot, [
         { relPath: 'devlog/note.md', line: 3, text: 'hello world' },
         { relPath: 'other.md', line: 10, text: 'another match' },
       ]),
     );
 
-    const result = await vaultSearchHandler({ query: 'hello' });
+    const result = await vaultSearchHandler({ query: 'hello', repository_name: 'test-repo' });
     const { results } = JSON.parse(result.content[0].text);
 
     expect(results).toEqual([
@@ -122,26 +123,28 @@ describe('result parsing', () => {
   });
 
   it('trims trailing newline/whitespace from matched text', async () => {
-    mockRgSuccess(makeRgOutput(tempDir, [{ relPath: 'a.md', line: 1, text: 'trimmed  ' }]));
+    const repoRoot = path.join(tempDir, 'test-repo');
+    mockRgSuccess(makeRgOutput(repoRoot, [{ relPath: 'a.md', line: 1, text: 'trimmed  ' }]));
 
-    const result = await vaultSearchHandler({ query: 'trimmed' });
+    const result = await vaultSearchHandler({ query: 'trimmed', repository_name: 'test-repo' });
     const { results } = JSON.parse(result.content[0].text);
 
     expect(results[0].text).toBe('trimmed');
   });
 
   it('ignores non-match type lines (begin, end, summary, context)', async () => {
+    const repoRoot = path.join(tempDir, 'test-repo');
     const output = [
-      JSON.stringify({ type: 'begin', data: { path: { text: path.join(tempDir, 'a.md') } } }),
+      JSON.stringify({ type: 'begin', data: { path: { text: path.join(repoRoot, 'a.md') } } }),
       JSON.stringify({
         type: 'match',
         data: {
-          path: { text: path.join(tempDir, 'a.md') },
+          path: { text: path.join(repoRoot, 'a.md') },
           line_number: 1,
           lines: { text: 'matched line\n' },
         },
       }),
-      JSON.stringify({ type: 'context', data: { path: { text: path.join(tempDir, 'a.md') }, line_number: 2, lines: { text: 'context\n' } } }),
+      JSON.stringify({ type: 'context', data: { path: { text: path.join(repoRoot, 'a.md') }, line_number: 2, lines: { text: 'context\n' } } }),
       JSON.stringify({ type: 'end', data: {} }),
       JSON.stringify({ type: 'summary', data: {} }),
       '',
@@ -149,7 +152,7 @@ describe('result parsing', () => {
 
     mockRgSuccess(output);
 
-    const result = await vaultSearchHandler({ query: 'matched' });
+    const result = await vaultSearchHandler({ query: 'matched', repository_name: 'test-repo' });
     const { results } = JSON.parse(result.content[0].text);
 
     expect(results).toHaveLength(1);
@@ -159,7 +162,7 @@ describe('result parsing', () => {
   it('returns empty results when stdout is blank', async () => {
     mockRgSuccess('');
 
-    const result = await vaultSearchHandler({ query: 'foo' });
+    const result = await vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' });
     const { results } = JSON.parse(result.content[0].text);
 
     expect(results).toEqual([]);
@@ -173,7 +176,7 @@ describe('exit code handling', () => {
   it('returns empty results when ripgrep exits with code 1 (no matches)', async () => {
     mockRgError(1, 'no matches found');
 
-    const result = await vaultSearchHandler({ query: 'nonexistent' });
+    const result = await vaultSearchHandler({ query: 'nonexistent', repository_name: 'test-repo' });
     const { results } = JSON.parse(result.content[0].text);
 
     expect(results).toEqual([]);
@@ -182,13 +185,13 @@ describe('exit code handling', () => {
   it('rethrows errors with exit code other than 1', async () => {
     mockRgError(127, 'rg: command not found');
 
-    await expect(vaultSearchHandler({ query: 'foo' })).rejects.toThrow('rg: command not found');
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' })).rejects.toThrow('rg: command not found');
   });
 
   it('rethrows errors with exit code 2', async () => {
     mockRgError(2, 'rg: invalid argument');
 
-    await expect(vaultSearchHandler({ query: 'foo' })).rejects.toThrow();
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' })).rejects.toThrow();
   });
 });
 
@@ -201,23 +204,23 @@ describe('path_filter argument handling', () => {
   });
 
   it('includes --json as the first argument', async () => {
-    await vaultSearchHandler({ query: 'foo' });
+    await vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' });
     expect(capturedRgArgs()[0]).toBe('--json');
   });
 
-  it('passes the vault path as the last argument to rg', async () => {
-    await vaultSearchHandler({ query: 'foo' });
+  it('passes the repo-scoped path as the last argument to rg', async () => {
+    await vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' });
     const args = capturedRgArgs();
-    expect(args[args.length - 1]).toBe(tempDir);
+    expect(args[args.length - 1]).toBe(path.join(tempDir, 'test-repo'));
   });
 
   it('does not include --glob when path_filter is omitted', async () => {
-    await vaultSearchHandler({ query: 'foo' });
+    await vaultSearchHandler({ query: 'foo', repository_name: 'test-repo' });
     expect(capturedRgArgs()).not.toContain('--glob');
   });
 
   it('prepends **/ to path_filter that does not start with **/', async () => {
-    await vaultSearchHandler({ query: 'foo', path_filter: 'devlog/*.md' });
+    await vaultSearchHandler({ query: 'foo', path_filter: 'devlog/*.md', repository_name: 'test-repo' });
     const args = capturedRgArgs();
     const globIdx = args.indexOf('--glob');
     expect(globIdx).toBeGreaterThan(-1);
@@ -225,16 +228,37 @@ describe('path_filter argument handling', () => {
   });
 
   it('uses path_filter as-is when it already starts with **/', async () => {
-    await vaultSearchHandler({ query: 'foo', path_filter: '**/devlog/*.md' });
+    await vaultSearchHandler({ query: 'foo', path_filter: '**/devlog/*.md', repository_name: 'test-repo' });
     const args = capturedRgArgs();
     const globIdx = args.indexOf('--glob');
     expect(args[globIdx + 1]).toBe('**/devlog/*.md');
   });
 
   it('does not double-prepend **/ to a filter that already has it', async () => {
-    await vaultSearchHandler({ query: 'foo', path_filter: '**/sub/dir/*.md' });
+    await vaultSearchHandler({ query: 'foo', path_filter: '**/sub/dir/*.md', repository_name: 'test-repo' });
     const args = capturedRgArgs();
     const globIdx = args.indexOf('--glob');
     expect(args[globIdx + 1]).toBe('**/sub/dir/*.md'); // not ***//sub/dir/*.md
+  });
+});
+
+// ---------------------------------------------------------------------------
+// repository_name validation
+// ---------------------------------------------------------------------------
+describe('repository_name validation', () => {
+  it('throws on repository_name containing slash', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: 'foo/bar' })).rejects.toThrow('Invalid repository_name');
+  });
+
+  it('throws on repository_name ".."', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: '..' })).rejects.toThrow('Invalid repository_name');
+  });
+
+  it('throws on repository_name "."', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: '.' })).rejects.toThrow('Invalid repository_name');
+  });
+
+  it('throws on empty repository_name', async () => {
+    await expect(vaultSearchHandler({ query: 'foo', repository_name: '' })).rejects.toThrow('Invalid repository_name');
   });
 });
