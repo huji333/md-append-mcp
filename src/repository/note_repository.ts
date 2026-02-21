@@ -49,3 +49,12 @@ export async function noteExists(absPath: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function listDir(absPath: string): Promise<string[]> {
+  try {
+    return await fs.readdir(absPath);
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw err;
+  }
+}

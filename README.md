@@ -1,53 +1,54 @@
 # obsidian-vault-mcp
 
-MCP server for Obsidian Vault access over LAN. Runs as a Streamable HTTP server on a Proxmox LXC that mounts Google Drive via rclone.
+MCP server for AI agents to log insights and decisions during development.
+
+Runs headless on a Mini PC (Proxmox LXC). Writes to an Obsidian Vault via rclone (Google Drive).
+
+## Concept
+
+**Agents write. Humans read.**
+
+The server is a structured write endpoint. Agents append devlogs and ADRs as they work, scoped
+by git repository and session. Reading, summarizing, and task management happen on
+Obsidian-equipped machines.
 
 ## Prerequisites
 
-- Node.js 20+
-- [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg` in PATH)
-- Vault directory accessible at the path you'll set in `VAULT_PATH`
+- [Bun](https://bun.sh/) 1.0+
+- Vault directory accessible at `VAULT_PATH`
 
-## Install & Build
-
-```sh
-npm install
-npm run build
-```
-
-## Run
+## Install & Run
 
 ```sh
-VAULT_PATH=/mnt/vault PORT=1065 node dist/index.js
+bun install
+VAULT_PATH=/mnt/vault bun run src/index.ts
 ```
 
-The server listens on `http://0.0.0.0:<PORT>/mcp`.
+Copy `.env.example` to `.env` to persist environment variables.
 
-Copy `.env.example` to `.env` to persist environment variables if needed.
-
-## Dev Mode
+## Dev
 
 ```sh
-VAULT_PATH=/mnt/vault npx tsx src/index.ts
+bun run src/index.ts   # dev (auto-loads .env, no build needed)
+bun test               # run tests
+bun build              # bundle to dist/ (optional, for production)
 ```
 
-## Testing
+## MCP Registration
 
 ```sh
-npm test
+claude mcp add obsidian-vault --transport http http://<SERVER_IP>:1065/mcp
 ```
-
-Unit tests cover `vault.ts` (path safety, read/upsert/delete) and `vault_search` (result parsing, exit-code handling, `path_filter` glob normalization). No live vault or ripgrep binary is required — filesystem operations use a temp directory and `execFile` is mocked.
 
 ## Tools
 
-All tools are exposed at `POST /mcp` via MCP Streamable HTTP.
-
 | Tool | Description |
 |------|-------------|
-| `note_read` | Read a note by vault-relative path. Returns `{ content, exists }`. |
-| `note_upsert` | Create a note (with optional frontmatter) or append to an existing one. Returns `{ created }`. |
-| `note_delete` | Delete a note. Returns `{ deleted }` (false if not found, no error). |
-| `vault_search` | Full-text search with ripgrep. Accepts `query` (regex) and optional `path_filter` (glob). |
+| `devlog_append` | Append structured log entries to a session devlog file |
+| `devlog_tail` | Read the last N entries from a session devlog |
+| `adr_write` | Create a new ADR (auto-numbered, content max 500 chars) |
+| `adr_delete` | Delete an ADR by number |
+| `adr_index` | List all ADRs for a repository |
+| `adr_view` | Read a specific ADR |
 
-See [`AGENTS.md`](./AGENTS.md) for full input/output specs.
+See [AGENTS.md](./AGENTS.md) for full input/output specs.
