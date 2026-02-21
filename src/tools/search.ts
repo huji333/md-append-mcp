@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getVaultPath } from '../vault.js';
+import { validateRepositoryName, resolveSafe } from '../path_validation.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -35,11 +36,9 @@ export function registerSearchTools(server: McpServer): void {
       },
     },
     async ({ repository_name: repositoryName, query, path_filter: pathFilter }) => {
-      if (!repositoryName || /[/\\]/.test(repositoryName) || repositoryName === '..' || repositoryName === '.') {
-        throw new Error(`Invalid repository_name: "${repositoryName}"`);
-      }
-      const vaultRoot = getVaultPath();
-      const repoRoot = path.resolve(vaultRoot, repositoryName);
+      validateRepositoryName(repositoryName);
+      const vaultRoot = path.resolve(getVaultPath());
+      const repoRoot = resolveSafe(vaultRoot, repositoryName);
       const args = ['--json', query];
       if (pathFilter) {
         const glob = pathFilter.startsWith('**/') ? pathFilter : `**/${pathFilter}`;

@@ -47,11 +47,11 @@ describe('resolveSafePath', () => {
   });
 
   it('throws on path traversal that escapes vault (../../)', () => {
-    expect(() => resolveSafePath('../../etc/passwd', REPO)).toThrow('escapes the vault root');
+    expect(() => resolveSafePath('../../etc/passwd', REPO)).toThrow('Path escapes root');
   });
 
   it('throws on path traversal that sneaks through sub-dir and escapes vault', () => {
-    expect(() => resolveSafePath('devlog/../../../etc/passwd', REPO)).toThrow('escapes the vault root');
+    expect(() => resolveSafePath('devlog/../../../etc/passwd', REPO)).toThrow('Path escapes root');
   });
 
   it('throws on invalid repository_name containing slash', () => {

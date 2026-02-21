@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
+import { validateRepositoryName, resolveSafe } from './path_validation.js';
 
 export function getVaultPath(): string {
   const vaultPath = process.env.VAULT_PATH;
@@ -13,15 +14,9 @@ export function getVaultPath(): string {
  * Throws if repositoryName is invalid or if the resolved path escapes the vault root.
  */
 export function resolveSafePath(relativePath: string, repositoryName: string): string {
-  if (!repositoryName || /[/\\]/.test(repositoryName) || repositoryName === '..' || repositoryName === '.') {
-    throw new Error(`Invalid repository_name: "${repositoryName}"`);
-  }
+  validateRepositoryName(repositoryName);
   const vaultPath = path.resolve(getVaultPath());
-  const resolved = path.resolve(vaultPath, repositoryName, relativePath);
-  if (resolved === vaultPath || !resolved.startsWith(vaultPath + path.sep)) {
-    throw new Error(`Invalid path: "${relativePath}" escapes the vault root`);
-  }
-  return resolved;
+  return resolveSafe(vaultPath, repositoryName, relativePath);
 }
 
 export async function readNote(
