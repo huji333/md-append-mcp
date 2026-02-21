@@ -20,10 +20,10 @@ describe('registerNoteUpsert', () => {
 
     registerNoteUpsert(server, { upsertNote: mockUpsertNote });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     await handler({ repository_name: 'my-repo', path: 'note.md', content: 'Hello' });
 
-    expect(mockUpsertNote.mock.calls[0]).toEqual(['note.md', 'Hello', 'my-repo', undefined]);
+    expect(mockUpsertNote).toHaveBeenCalledWith('note.md', 'Hello', 'my-repo', undefined);
   });
 
   it('passes frontmatter to upsertNote', async () => {
@@ -32,11 +32,11 @@ describe('registerNoteUpsert', () => {
 
     registerNoteUpsert(server, { upsertNote: mockUpsertNote });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     const fm = { date: '2024-01-01', tags: ['test'] };
     await handler({ repository_name: 'r', path: 'n.md', content: 'body', frontmatter: fm });
 
-    expect(mockUpsertNote.mock.calls[0][3]).toEqual(fm);
+    expect(mockUpsertNote).toHaveBeenCalledWith('n.md', 'body', 'r', fm);
   });
 
   it('wraps usecase result in MCP content format', async () => {
@@ -45,7 +45,7 @@ describe('registerNoteUpsert', () => {
 
     registerNoteUpsert(server, { upsertNote: mockUpsertNote });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     const result = await handler({ repository_name: 'r', path: 'n.md', content: 'x' });
 
     expect(result).toEqual({

@@ -14,16 +14,16 @@ describe('registerVaultSearch', () => {
     expect(registerTool.mock.calls[0][0]).toBe('vault_search');
   });
 
-  it('calls searchVault with (query, repository_name)', async () => {
+  it('calls searchVault with (query, repository_name, undefined) when no path_filter', async () => {
     const { server, registerTool } = makeFakeServer();
     const mockSearchVault = mock(() => Promise.resolve([]));
 
     registerVaultSearch(server, { searchVault: mockSearchVault });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     await handler({ repository_name: 'my-repo', query: 'hello' });
 
-    expect(mockSearchVault.mock.calls[0]).toEqual(['hello', 'my-repo', undefined]);
+    expect(mockSearchVault).toHaveBeenCalledWith('hello', 'my-repo', undefined);
   });
 
   it('passes path_filter to searchVault', async () => {
@@ -32,10 +32,10 @@ describe('registerVaultSearch', () => {
 
     registerVaultSearch(server, { searchVault: mockSearchVault });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     await handler({ repository_name: 'r', query: 'q', path_filter: 'devlog/*.md' });
 
-    expect(mockSearchVault.mock.calls[0][2]).toBe('devlog/*.md');
+    expect(mockSearchVault).toHaveBeenCalledWith('q', 'r', 'devlog/*.md');
   });
 
   it('wraps results array in MCP content format', async () => {
@@ -45,7 +45,7 @@ describe('registerVaultSearch', () => {
 
     registerVaultSearch(server, { searchVault: mockSearchVault });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     const result = await handler({ repository_name: 'r', query: 'hello' });
 
     expect(result).toEqual({

@@ -20,10 +20,10 @@ describe('registerNoteRead', () => {
 
     registerNoteRead(server, { readNote: mockReadNote });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     await handler({ repository_name: 'my-repo', path: 'note.md' });
 
-    expect(mockReadNote.mock.calls[0]).toEqual(['note.md', 'my-repo']);
+    expect(mockReadNote).toHaveBeenCalledWith('note.md', 'my-repo');
   });
 
   it('wraps usecase result in MCP content format', async () => {
@@ -32,7 +32,7 @@ describe('registerNoteRead', () => {
 
     registerNoteRead(server, { readNote: mockReadNote });
 
-    const handler = registerTool.mock.calls[0][2];
+    const handler = registerTool.mock.calls[0][2] as Function;
     const result = await handler({ repository_name: 'my-repo', path: 'note.md' });
 
     expect(result).toEqual({

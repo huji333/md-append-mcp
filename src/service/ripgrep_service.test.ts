@@ -8,7 +8,7 @@ import { createRipgrepService } from './ripgrep_service.ts';
 type MockExecCallback = (err: Error | null, result?: { stdout: string }) => void;
 
 const mockExecFile = mock((..._args: unknown[]) => ({}) as ChildProcess);
-const runSearch = createRipgrepService(mockExecFile as Parameters<typeof createRipgrepService>[0]);
+const runSearch = createRipgrepService(mockExecFile as unknown as Parameters<typeof createRipgrepService>[0]);
 
 // ---------------------------------------------------------------------------
 // Helpers
